@@ -13,7 +13,7 @@ namespace BasicSharp
         private int[] gosub_stack = new int[MAX_GOSUB_STACK_DEPTH];
         private int gosub_stack_ptr;
 
-        public uBasic (char[] program)
+        public Interpreter(char[] program)
         {
             for_stack_ptr = gosub_stack_ptr = 0;
             tokenizer = new Tokenizer (program);
@@ -206,23 +206,22 @@ namespace BasicSharp
             do {
                 Debug.WriteLine("Print loop");
                 if(tokenizer.GetToken() == Token.TOKENIZER_STRING) {
-                    Print(tokenizer.GetString());
+                    HandlePrintStatement(tokenizer.GetString());
                     tokenizer.Next();
                 } else if(tokenizer.GetToken() == Token.TOKENIZER_COMMA) {
-                    Print(" ");
+                    HandlePrintStatement(" ");
                     tokenizer.Next();
                 } else if(tokenizer.GetToken() == Token.TOKENIZER_SEMICOLON) {
                     tokenizer.Next();
                 } else if(tokenizer.GetToken() == Token.TOKENIZER_VARIABLE ||
                     tokenizer.GetToken() == Token.TOKENIZER_NUMBER) {
-                    Print(String.Format("{0}", expr()));
+                    HandlePrintStatement(String.Format("{0}", expr()));
                 } else {
                     break;
                 }
             } while(tokenizer.GetToken() != Token.TOKENIZER_CR &&
                 tokenizer.GetToken() != Token.TOKENIZER_ENDOFINPUT);
 
-            Print("\n");
             Debug.WriteLine("End of print");
             tokenizer.Next();
         }
@@ -382,9 +381,6 @@ namespace BasicSharp
             case Token.TOKENIZER_END:
                 end_statement();
                 break;
-//            case Token.TOKENIZER_LET:
-//                accept(Token.TOKENIZER_LET);
-                /* Fall through. */
             case Token.TOKENIZER_VARIABLE:
                 let_statement();
                 break;
@@ -421,25 +417,29 @@ namespace BasicSharp
         /*---------------------------------------------------------------------------*/
         void ubasic_set_variable(int varnum, int value)
         {
-            if(varnum > 0 && varnum <= MAX_VARNUM) {
+            if(varnum >= 0 && varnum < MAX_VARNUM) {
                 variables[varnum] = value;
             }
         }
         /*---------------------------------------------------------------------------*/
         int ubasic_get_variable(int varnum)
         {
-            if(varnum > 0 && varnum <= MAX_VARNUM) {
+            if(varnum >= 0 && varnum < MAX_VARNUM) {
                 return variables[varnum];
             }
             return 0;
         }
-        /*---------------------------------------------------------------------------*/
+        /*
+         * Instruction Delegates
+         */
+        public EventHandler<string> PrintDelegate = null;
 
-        #region uBasic Instructions
-        void Print(string msg) {
-            Console.Write (msg);
+        private void HandlePrintStatement(string s)
+        {
+            if (PrintDelegate != null) {
+                PrintDelegate (this, s);
+            }
         }
-        #endregion
     }
 }
 

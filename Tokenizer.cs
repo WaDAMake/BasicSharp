@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 
-namespace uBasic
+namespace BasicSharp
 {
     public enum Token {
         TOKENIZER_ERROR,
@@ -9,7 +9,6 @@ namespace uBasic
         TOKENIZER_NUMBER,
         TOKENIZER_STRING,
         TOKENIZER_VARIABLE,
-        TOKENIZER_LET,
         TOKENIZER_PRINT,
         TOKENIZER_IF,
         TOKENIZER_THEN,
@@ -50,7 +49,6 @@ namespace uBasic
         };
 
         private static KeywordToken[] keywords = new KeywordToken[] {
-            new KeywordToken() {    keyword = "let",    token = Token.TOKENIZER_LET},
             new KeywordToken() {    keyword = "print",  token = Token.TOKENIZER_PRINT},
             new KeywordToken() {    keyword = "if",     token = Token.TOKENIZER_IF},
             new KeywordToken() {    keyword = "then",   token = Token.TOKENIZER_THEN},
@@ -63,7 +61,6 @@ namespace uBasic
             new KeywordToken() {    keyword = "return", token = Token.TOKENIZER_RETURN},
             new KeywordToken() {    keyword = "call",   token = Token.TOKENIZER_CALL},
             new KeywordToken() {    keyword = "end",    token = Token.TOKENIZER_END},
-            new KeywordToken() {    keyword = null,     token = Token.TOKENIZER_ERROR}
         };
 
         private int PC, NextPC;
@@ -85,6 +82,7 @@ namespace uBasic
         public void Reset()
         {
             PC = 0;
+            CurrentToken = GetNextToken ();
         }
 
         public void Next()
@@ -95,7 +93,7 @@ namespace uBasic
 
             Debug.WriteLine("tokenizer_next: {0}", NextPC);
             PC = NextPC;
-            while(Program[PC] == ' ') {
+            while(PC < Program.Length && Program[PC] == ' ') {
                 ++ PC;
             }
             CurrentToken = GetNextToken();
@@ -110,12 +108,12 @@ namespace uBasic
 
         public int GetNumber()
         {
-            return int.Parse(Program[PC].ToString());
+            return int.Parse(new string(Program, PC, NextPC - PC));
         }
 
         public int GetVariable()
         {
-            return Program[PC] - 'a';
+            return char.ToLower(Program[PC]) - 'a';
         }
 
         public string GetString()
@@ -137,7 +135,7 @@ namespace uBasic
 
         public bool Finished()
         {
-            return (Program[PC] == 0 || CurrentToken == Token.TOKENIZER_ENDOFINPUT);
+            return (PC == Program.Length || CurrentToken == Token.TOKENIZER_ENDOFINPUT);
         }
 
         public void PrintError()
@@ -182,12 +180,15 @@ namespace uBasic
             case '=':
                 return Token.TOKENIZER_EQ;
             }
-            return 0;
+            return Token.TOKENIZER_NULL;
         }
 
         private Token GetNextToken()
         {
-            char reg = Program [PC];
+            if (PC == Program.Length)
+                return Token.TOKENIZER_ENDOFINPUT;
+
+            char reg = char.ToLower(Program [PC]);
 
             if (reg == 0) {
                 return Token.TOKENIZER_ENDOFINPUT;
@@ -242,7 +243,7 @@ namespace uBasic
         private bool CheckToken(char[] token)
         {
             for (int i = 0; i < token.Length; i++) {
-                if (Program [PC + i] != token [i])
+                if (char.ToLower(Program [PC + i]) != token [i])
                     return false;
             }
 
