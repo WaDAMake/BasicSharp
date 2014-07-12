@@ -13,11 +13,16 @@ namespace BasicSharp
         private int[] gosub_stack = new int[MAX_GOSUB_STACK_DEPTH];
         private int gosub_stack_ptr;
 
+        private Random RandNumber = null;
+
         public Interpreter(char[] program)
         {
             for_stack_ptr = gosub_stack_ptr = 0;
             tokenizer = new Tokenizer (program);
             ended = false;
+
+            RandNumber = new Random ();
+            MathFunctionDelegate = MathFunctionHandler;
         }
 
         struct for_state {
@@ -155,7 +160,7 @@ namespace BasicSharp
             r = r1 > 0;
             op = tokenizer.GetToken();
             Debug.WriteLine("relation: token {0}", op);
-            while(op == Token.TOKENIZER_LT ||
+            while (op == Token.TOKENIZER_LT ||
                 op == Token.TOKENIZER_GT ||
                 op == Token.TOKENIZER_EQ) {
                 tokenizer.Next();
@@ -200,6 +205,23 @@ namespace BasicSharp
             jump_linenum(tokenizer.GetNumber());
         }
         /*---------------------------------------------------------------------------*/
+        private void led_statement()
+        {
+            accept (Token.TOKENIZER_LED);
+
+            byte r = (byte)expr ();
+            accept (Token.TOKENIZER_COMMA);
+
+            byte g = (byte)expr ();
+            accept (Token.TOKENIZER_COMMA);
+
+            byte b = (byte)expr ();
+
+            HandleLEDStatement (r, g, b);
+
+            tokenizer.Next ();
+        }
+
         private void print_statement()
         {
             accept(Token.TOKENIZER_PRINT);
@@ -254,14 +276,50 @@ namespace BasicSharp
         /*---------------------------------------------------------------------------*/
         private void let_statement()
         {
-            int var;
+            int v;
+            int r = 0;
 
-            var = tokenizer.GetVariable();
+            v = tokenizer.GetVariable();
 
             accept(Token.TOKENIZER_VARIABLE);
             accept(Token.TOKENIZER_EQ);
-            ubasic_set_variable(var, expr());
-            Debug.WriteLine("let_statement: assign {0} to {1}\n", variables[var], var);
+
+            Token op = tokenizer.GetToken ();
+
+            // Random Number.
+            if (op == Token.TOKENIZER_RAND) {
+                accept (Token.TOKENIZER_RAND);
+                accept (Token.TOKENIZER_LEFTPAREN);
+                r = expr ();
+                accept (Token.TOKENIZER_RIGHTPAREN);
+
+                MathFunctionParams p = HandleMathFunction (r, 0, op);
+
+                if (p != null)
+                    r = p.Result;
+
+            } else if (op == Token.TOKENIZER_SIN ||
+                       op == Token.TOKENIZER_COS ||
+                       op == Token.TOKENIZER_TAN) {
+                int d, b;
+
+                accept (op);
+                accept (Token.TOKENIZER_LEFTPAREN);
+                d = expr ();
+                accept (Token.TOKENIZER_COMMA);
+                b = expr ();
+                accept (Token.TOKENIZER_RIGHTPAREN);
+
+                MathFunctionParams p = HandleMathFunction (d, b, op);
+
+                if (p != null)
+                    r = p.Result;
+            } else {
+                r = expr ();
+            }
+
+            ubasic_set_variable(v, r);
+            Debug.WriteLine("let_statement: assign {0} to {1}\n", variables[v], v);
             accept(Token.TOKENIZER_CR);
 
         }
@@ -357,6 +415,9 @@ namespace BasicSharp
             token = tokenizer.GetToken();
 
             switch(token) {
+            case Token.TOKENIZER_LED:
+                led_statement ();
+                break;
             case Token.TOKENIZER_PRINT:
                 print_statement();
                 break;
@@ -390,6 +451,7 @@ namespace BasicSharp
                 break;
             }
         }
+
         /*---------------------------------------------------------------------------*/
         private void line_statement()
         {
@@ -432,6 +494,26 @@ namespace BasicSharp
         /*
          * Instruction Delegates
          */
+        public class LEDColorParameters
+        {
+            public byte RedColor;
+            public byte GreenColor;
+            public byte BlueColor;
+        }
+
+        public EventHandler<LEDColorParameters> LEDDelegate;
+
+        private void HandleLEDStatement(byte r, byte g, byte b)
+        {
+            if (LEDDelegate != null) {
+                LEDDelegate (this, new LEDColorParameters {
+                    RedColor = r,
+                    GreenColor = g,
+                    BlueColor = b,
+                });
+            }
+        }
+
         public EventHandler<string> PrintDelegate = null;
 
         private void HandlePrintStatement(string s)
@@ -439,6 +521,59 @@ namespace BasicSharp
             if (PrintDelegate != null) {
                 PrintDelegate (this, s);
             }
+        }
+
+        public class MathFunctionParams
+        {
+            public int Operand1;
+            public int Operand2;
+            public Token Op;
+            public int Result;
+        }
+
+        public EventHandler<MathFunctionParams> MathFunctionDelegate;
+
+        // Default Math Function Delegate.
+        private void MathFunctionHandler (object sender, Interpreter.MathFunctionParams e)
+        {
+            if (e.Op == Token.TOKENIZER_RAND) {
+                e.Result = RandNumber.Next (e.Operand1);
+                Debug.WriteLine ("Random Number: {0}", e.Result);
+                return;
+            }
+
+            double value = e.Operand1;
+            value *= (3.1415926 / 180);
+
+
+            switch (e.Op) {
+            case Token.TOKENIZER_SIN:
+                value = Math.Sin (value);
+                break;
+            case Token.TOKENIZER_COS:
+                value = Math.Cos (value);
+                break;
+            case Token.TOKENIZER_TAN:
+                value = Math.Tan (value);
+                break;
+            }
+
+            e.Result = (int)(value * e.Operand2);
+        }
+            
+        private MathFunctionParams HandleMathFunction(int op1, int op2, Token func)
+        {
+            MathFunctionParams p = null;
+
+            if (MathFunctionDelegate != null) {
+                p = new MathFunctionParams {
+                    Operand1 = op1,
+                    Operand2 = op2,
+                    Op = func,
+                };
+                MathFunctionDelegate (this, p);
+            }
+            return p;
         }
     }
 }

@@ -5,22 +5,13 @@ namespace BasicSharp
 {
     public enum Token {
         TOKENIZER_ERROR,
+        // Variant Tokens.
         TOKENIZER_ENDOFINPUT,
         TOKENIZER_NUMBER,
         TOKENIZER_STRING,
         TOKENIZER_VARIABLE,
-        TOKENIZER_PRINT,
-        TOKENIZER_IF,
-        TOKENIZER_THEN,
-        TOKENIZER_ELSE,
-        TOKENIZER_FOR,
-        TOKENIZER_TO,
-        TOKENIZER_NEXT,
-        TOKENIZER_GOTO,
-        TOKENIZER_GOSUB,
-        TOKENIZER_RETURN,
-        TOKENIZER_CALL,
-        TOKENIZER_END,
+
+        // Single-Character Tokens.
         TOKENIZER_COMMA,
         TOKENIZER_SEMICOLON,
         TOKENIZER_PLUS,
@@ -37,6 +28,29 @@ namespace BasicSharp
         TOKENIZER_EQ,
         TOKENIZER_CR,
 
+        // Basic Keywords.
+        TOKENIZER_PRINT,
+        TOKENIZER_IF,
+        TOKENIZER_THEN,
+        TOKENIZER_ELSE,
+        TOKENIZER_FOR,
+        TOKENIZER_TO,
+        TOKENIZER_NEXT,
+        TOKENIZER_GOTO,
+        TOKENIZER_GOSUB,
+        TOKENIZER_RETURN,
+        TOKENIZER_CALL,
+        TOKENIZER_END,
+
+        // Extended Keywords.
+        TOKENIZER_SIN,
+        TOKENIZER_COS,
+        TOKENIZER_TAN,
+        TOKENIZER_RAND,
+
+        // Device-specific Keywords.
+        TOKENIZER_LED,
+
         // End of Tokens.
         TOKENIZER_NULL,
     };
@@ -49,6 +63,7 @@ namespace BasicSharp
         };
 
         private static KeywordToken[] keywords = new KeywordToken[] {
+            // Basic Keywords.
             new KeywordToken() {    keyword = "print",  token = Token.TOKENIZER_PRINT},
             new KeywordToken() {    keyword = "if",     token = Token.TOKENIZER_IF},
             new KeywordToken() {    keyword = "then",   token = Token.TOKENIZER_THEN},
@@ -61,6 +76,13 @@ namespace BasicSharp
             new KeywordToken() {    keyword = "return", token = Token.TOKENIZER_RETURN},
             new KeywordToken() {    keyword = "call",   token = Token.TOKENIZER_CALL},
             new KeywordToken() {    keyword = "end",    token = Token.TOKENIZER_END},
+            // Extended Keywords.
+            new KeywordToken() {    keyword = "sin",    token = Token.TOKENIZER_SIN},
+            new KeywordToken() {    keyword = "cos",    token = Token.TOKENIZER_COS},
+            new KeywordToken() {    keyword = "tan",    token = Token.TOKENIZER_TAN},
+            new KeywordToken() {    keyword = "rand",   token = Token.TOKENIZER_RAND},
+            // Device-specific Keywords.
+            new KeywordToken() {    keyword = "led",    token = Token.TOKENIZER_LED},
         };
 
         private int PC, NextPC;
