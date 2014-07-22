@@ -41,7 +41,7 @@ namespace BasicSharp
         private bool ended;
 
         /*---------------------------------------------------------------------------*/
-        private void accept(Token token)
+        private void AcceptToken(Token token)
         {
             if(token != tokenizer.GetToken()) {
                 Debug.WriteLine("Token not what was expected (expected {0}, got {1})", token, tokenizer.GetToken());
@@ -57,7 +57,7 @@ namespace BasicSharp
             int r;
             Debug.WriteLine("varfactor: obtaining {0} from variable {1}", variables[tokenizer.GetVariable()], tokenizer.GetVariable());
             r = ubasic_get_variable(tokenizer.GetVariable());
-            accept(Token.TOKENIZER_VARIABLE);
+            AcceptToken(Token.VARIABLE);
             return r;
         }
         /*---------------------------------------------------------------------------*/
@@ -67,15 +67,15 @@ namespace BasicSharp
 
             Debug.WriteLine("factor: token {0}", tokenizer.GetToken());
             switch(tokenizer.GetToken()) {
-            case Token.TOKENIZER_NUMBER:
+            case Token.NUMBER:
                 r = tokenizer.GetNumber();
                 Debug.WriteLine("factor: number {0}", r);
-                accept(Token.TOKENIZER_NUMBER);
+                AcceptToken(Token.NUMBER);
                 break;
-            case Token.TOKENIZER_LEFTPAREN:
-                accept(Token.TOKENIZER_LEFTPAREN);
+            case Token.LEFTPAREN:
+                AcceptToken(Token.LEFTPAREN);
                 r = expr();
-                accept(Token.TOKENIZER_RIGHTPAREN);
+                AcceptToken(Token.RIGHTPAREN);
                 break;
             default:
                 r = varfactor();
@@ -92,20 +92,20 @@ namespace BasicSharp
             f1 = factor();
             op = tokenizer.GetToken();
             Debug.WriteLine("term: token {0}", op);
-            while(op == Token.TOKENIZER_ASTR ||
-                op == Token.TOKENIZER_SLASH ||
-                op == Token.TOKENIZER_MOD) {
+            while(op == Token.ASTR ||
+                op == Token.SLASH ||
+                op == Token.MOD) {
                 tokenizer.Next();
                 f2 = factor();
                 Debug.WriteLine("term: {0} {1} {2}", f1, op, f2);
                 switch (op) {
-                case Token.TOKENIZER_ASTR:
+                case Token.ASTR:
                     f1 = f1 * f2;
                     break;
-                case Token.TOKENIZER_SLASH:
+                case Token.SLASH:
                     f1 = f1 / f2;
                     break;
-                case Token.TOKENIZER_MOD:
+                case Token.MOD:
                     f1 = f1 % f2;
                     break;
                 }
@@ -123,24 +123,24 @@ namespace BasicSharp
             t1 = term();
             op = tokenizer.GetToken();
             Debug.WriteLine("expr: token {0}", op);
-            while(op == Token.TOKENIZER_PLUS ||
-                op == Token.TOKENIZER_MINUS ||
-                op == Token.TOKENIZER_AND ||
-                op == Token.TOKENIZER_OR) {
+            while(op == Token.PLUS ||
+                op == Token.MINUS ||
+                op == Token.AND ||
+                op == Token.OR) {
                 tokenizer.Next();
                 t2 = term();
                 Debug.WriteLine("expr: {0} {1} {2}", t1, op, t2);
                 switch (op) {
-                case Token.TOKENIZER_PLUS:
+                case Token.PLUS:
                     t1 = t1 + t2;
                     break;
-                case Token.TOKENIZER_MINUS:
+                case Token.MINUS:
                     t1 = t1 - t2;
                     break;
-                case Token.TOKENIZER_AND:
+                case Token.AND:
                     t1 = t1 & t2;
                     break;
-                case Token.TOKENIZER_OR:
+                case Token.OR:
                     t1 = t1 | t2;
                     break;
                 }
@@ -160,20 +160,20 @@ namespace BasicSharp
             r = r1 > 0;
             op = tokenizer.GetToken();
             Debug.WriteLine("relation: token {0}", op);
-            while (op == Token.TOKENIZER_LT ||
-                op == Token.TOKENIZER_GT ||
-                op == Token.TOKENIZER_EQ) {
+            while (op == Token.LT ||
+                op == Token.GT ||
+                op == Token.EQ) {
                 tokenizer.Next();
                 r2 = expr();
                 Debug.WriteLine("relation: {0} {1} {2}", r1, op, r2);
                 switch(op) {
-                case Token.TOKENIZER_LT:
+                case Token.LT:
                     r = r1 < r2;
                     break;
-                case Token.TOKENIZER_GT:
+                case Token.GT:
                     r = r1 > r2;
                     break;
-                case Token.TOKENIZER_EQ:
+                case Token.EQ:
                     r = r1 == r2;
                     break;
                 }
@@ -189,31 +189,42 @@ namespace BasicSharp
                 do {
                     do {
                         tokenizer.Next();
-                    } while(tokenizer.GetToken() != Token.TOKENIZER_CR &&
-                        tokenizer.GetToken() != Token.TOKENIZER_ENDOFINPUT);
-                    if(tokenizer.GetToken() == Token.TOKENIZER_CR) {
+                    } while(tokenizer.GetToken() != Token.CR &&
+                        tokenizer.GetToken() != Token.ENDOFINPUT);
+                    if(tokenizer.GetToken() == Token.CR) {
                         tokenizer.Next();
                     }
-                } while(tokenizer.GetToken() != Token.TOKENIZER_NUMBER);
+                } while(tokenizer.GetToken() != Token.NUMBER);
                 Debug.WriteLine("jump_linenum: Found line {0}", tokenizer.GetNumber());
             }
         }
         /*---------------------------------------------------------------------------*/
         private void goto_statement()
         {
-            accept(Token.TOKENIZER_GOTO);
+            AcceptToken(Token.GOTO);
             jump_linenum(tokenizer.GetNumber());
+        }
+        /*---------------------------------------------------------------------------*/
+        private void delay_statement()
+        {
+            AcceptToken (Token.DELAY);
+
+            int delay = expr ();
+
+            HandleDelayStatement (delay);
+
+            tokenizer.Next ();
         }
         /*---------------------------------------------------------------------------*/
         private void led_statement()
         {
-            accept (Token.TOKENIZER_LED);
+            AcceptToken (Token.LED);
 
             byte r = (byte)expr ();
-            accept (Token.TOKENIZER_COMMA);
+            AcceptToken (Token.COMMA);
 
             byte g = (byte)expr ();
-            accept (Token.TOKENIZER_COMMA);
+            AcceptToken (Token.COMMA);
 
             byte b = (byte)expr ();
 
@@ -224,25 +235,25 @@ namespace BasicSharp
 
         private void print_statement()
         {
-            accept(Token.TOKENIZER_PRINT);
+            AcceptToken (Token.PRINT);
             do {
                 Debug.WriteLine("Print loop");
-                if(tokenizer.GetToken() == Token.TOKENIZER_STRING) {
+                if(tokenizer.GetToken() == Token.STRING) {
                     HandlePrintStatement(tokenizer.GetString());
                     tokenizer.Next();
-                } else if(tokenizer.GetToken() == Token.TOKENIZER_COMMA) {
+                } else if(tokenizer.GetToken() == Token.COMMA) {
                     HandlePrintStatement(" ");
                     tokenizer.Next();
-                } else if(tokenizer.GetToken() == Token.TOKENIZER_SEMICOLON) {
+                } else if(tokenizer.GetToken() == Token.SEMICOLON) {
                     tokenizer.Next();
-                } else if(tokenizer.GetToken() == Token.TOKENIZER_VARIABLE ||
-                    tokenizer.GetToken() == Token.TOKENIZER_NUMBER) {
+                } else if(tokenizer.GetToken() == Token.VARIABLE ||
+                    tokenizer.GetToken() == Token.NUMBER) {
                     HandlePrintStatement(String.Format("{0}", expr()));
                 } else {
                     break;
                 }
-            } while(tokenizer.GetToken() != Token.TOKENIZER_CR &&
-                tokenizer.GetToken() != Token.TOKENIZER_ENDOFINPUT);
+            } while(tokenizer.GetToken() != Token.CR &&
+                tokenizer.GetToken() != Token.ENDOFINPUT);
 
             Debug.WriteLine("End of print");
             tokenizer.Next();
@@ -252,63 +263,63 @@ namespace BasicSharp
         {
             bool r;
 
-            accept(Token.TOKENIZER_IF);
+            AcceptToken(Token.IF);
 
             r = relation();
             Debug.WriteLine("if_statement: relation {0}", r);
-            accept(Token.TOKENIZER_THEN);
+            AcceptToken (Token.THEN);
             if(r) {
                 statement();
             } else {
                 do {
                     tokenizer.Next();
-                } while(tokenizer.GetToken() != Token.TOKENIZER_ELSE &&
-                    tokenizer.GetToken() != Token.TOKENIZER_CR &&
-                    tokenizer.GetToken() != Token.TOKENIZER_ENDOFINPUT);
-                if(tokenizer.GetToken() == Token.TOKENIZER_ELSE) {
+                } while(tokenizer.GetToken() != Token.ELSE &&
+                    tokenizer.GetToken() != Token.CR &&
+                    tokenizer.GetToken() != Token.ENDOFINPUT);
+                if(tokenizer.GetToken() == Token.ELSE) {
                     tokenizer.Next();
                     statement();
-                } else if(tokenizer.GetToken() == Token.TOKENIZER_CR) {
+                } else if(tokenizer.GetToken() == Token.CR) {
                     tokenizer.Next();
                 }
             }
         }
         /*---------------------------------------------------------------------------*/
-        private void let_statement()
+        private void LetStatement()
         {
             int v;
             int r = 0;
 
             v = tokenizer.GetVariable();
 
-            accept(Token.TOKENIZER_VARIABLE);
-            accept(Token.TOKENIZER_EQ);
+            AcceptToken (Token.VARIABLE);
+            AcceptToken (Token.EQ);
 
             Token op = tokenizer.GetToken ();
 
             // Random Number.
-            if (op == Token.TOKENIZER_RAND) {
-                accept (Token.TOKENIZER_RAND);
-                accept (Token.TOKENIZER_LEFTPAREN);
+            if (op == Token.RAND) {
+                AcceptToken (Token.RAND);
+                AcceptToken (Token.LEFTPAREN);
                 r = expr ();
-                accept (Token.TOKENIZER_RIGHTPAREN);
+                AcceptToken (Token.RIGHTPAREN);
 
                 MathFunctionParams p = HandleMathFunction (r, 0, op);
 
                 if (p != null)
                     r = p.Result;
 
-            } else if (op == Token.TOKENIZER_SIN ||
-                       op == Token.TOKENIZER_COS ||
-                       op == Token.TOKENIZER_TAN) {
+            } else if (op == Token.SIN ||
+                       op == Token.COS ||
+                       op == Token.TAN) {
                 int d, b;
 
-                accept (op);
-                accept (Token.TOKENIZER_LEFTPAREN);
+                AcceptToken (op);
+                AcceptToken (Token.LEFTPAREN);
                 d = expr ();
-                accept (Token.TOKENIZER_COMMA);
+                AcceptToken (Token.COMMA);
                 b = expr ();
-                accept (Token.TOKENIZER_RIGHTPAREN);
+                AcceptToken (Token.RIGHTPAREN);
 
                 MathFunctionParams p = HandleMathFunction (d, b, op);
 
@@ -320,17 +331,17 @@ namespace BasicSharp
 
             ubasic_set_variable(v, r);
             Debug.WriteLine("let_statement: assign {0} to {1}\n", variables[v], v);
-            accept(Token.TOKENIZER_CR);
+            AcceptToken (Token.CR);
 
         }
         /*---------------------------------------------------------------------------*/
         private void gosub_statement()
         {
             int linenum;
-            accept(Token.TOKENIZER_GOSUB);
+            AcceptToken (Token.GOSUB);
             linenum = tokenizer.GetNumber();
-            accept(Token.TOKENIZER_NUMBER);
-            accept(Token.TOKENIZER_CR);
+            AcceptToken (Token.NUMBER);
+            AcceptToken (Token.CR);
             if(gosub_stack_ptr < MAX_GOSUB_STACK_DEPTH) {
                 gosub_stack[gosub_stack_ptr] = tokenizer.GetNumber();
                 gosub_stack_ptr++;
@@ -342,7 +353,7 @@ namespace BasicSharp
         /*---------------------------------------------------------------------------*/
         private void return_statement()
         {
-            accept(Token.TOKENIZER_RETURN);
+            AcceptToken (Token.RETURN);
             if(gosub_stack_ptr > 0) {
                 gosub_stack_ptr--;
                 jump_linenum(gosub_stack[gosub_stack_ptr]);
@@ -355,9 +366,9 @@ namespace BasicSharp
         {
             int var;
 
-            accept(Token.TOKENIZER_NEXT);
+            AcceptToken (Token.NEXT);
             var = tokenizer.GetVariable();
-            accept(Token.TOKENIZER_VARIABLE);
+            AcceptToken (Token.VARIABLE);
             if(for_stack_ptr > 0 &&
                 var == for_stack[for_stack_ptr - 1].for_variable) {
                 ubasic_set_variable(var,
@@ -366,11 +377,11 @@ namespace BasicSharp
                     jump_linenum(for_stack[for_stack_ptr - 1].line_after_for);
                 } else {
                     for_stack_ptr--;
-                    accept(Token.TOKENIZER_CR);
+                    AcceptToken (Token.CR);
                 }
             } else {
                 Debug.WriteLine("next_statement: non-matching next (expected {0}, found {1})\n", for_stack[for_stack_ptr - 1].for_variable, var);
-                accept(Token.TOKENIZER_CR);
+                AcceptToken (Token.CR);
             }
 
         }
@@ -379,14 +390,14 @@ namespace BasicSharp
         {
             int for_variable, to;
 
-            accept(Token.TOKENIZER_FOR);
+            AcceptToken (Token.FOR);
             for_variable = tokenizer.GetVariable();
-            accept(Token.TOKENIZER_VARIABLE);
-            accept(Token.TOKENIZER_EQ);
+            AcceptToken (Token.VARIABLE);
+            AcceptToken (Token.EQ);
             ubasic_set_variable(for_variable, expr());
-            accept(Token.TOKENIZER_TO);
+            AcceptToken (Token.TO);
             to = expr();
-            accept(Token.TOKENIZER_CR);
+            AcceptToken (Token.CR);
 
             if(for_stack_ptr < MAX_FOR_STACK_DEPTH) {
                 for_stack[for_stack_ptr].line_after_for = tokenizer.GetNumber();
@@ -404,7 +415,7 @@ namespace BasicSharp
         /*---------------------------------------------------------------------------*/
         private void end_statement()
         {
-            accept(Token.TOKENIZER_END);
+            AcceptToken (Token.END);
             ended = true;
         }
         /*---------------------------------------------------------------------------*/
@@ -415,35 +426,38 @@ namespace BasicSharp
             token = tokenizer.GetToken();
 
             switch(token) {
-            case Token.TOKENIZER_LED:
+            case Token.DELAY:
+                delay_statement ();
+                break;
+            case Token.LED:
                 led_statement ();
                 break;
-            case Token.TOKENIZER_PRINT:
+            case Token.PRINT:
                 print_statement();
                 break;
-            case Token.TOKENIZER_IF:
+            case Token.IF:
                 if_statement();
                 break;
-            case Token.TOKENIZER_GOTO:
+            case Token.GOTO:
                 goto_statement();
                 break;
-            case Token.TOKENIZER_GOSUB:
+            case Token.GOSUB:
                 gosub_statement();
                 break;
-            case Token.TOKENIZER_RETURN:
+            case Token.RETURN:
                 return_statement();
                 break;
-            case Token.TOKENIZER_FOR:
+            case Token.FOR:
                 for_statement();
                 break;
-            case Token.TOKENIZER_NEXT:
+            case Token.NEXT:
                 next_statement();
                 break;
-            case Token.TOKENIZER_END:
+            case Token.END:
                 end_statement();
                 break;
-            case Token.TOKENIZER_VARIABLE:
-                let_statement();
+            case Token.VARIABLE:
+                LetStatement();
                 break;
             default:
                 Debug.WriteLine ("ubasic.c: statement(): not implemented {0}", token);
@@ -457,14 +471,14 @@ namespace BasicSharp
         {
             Debug.WriteLine("----------- Line number {0} ---------\n", tokenizer.GetNumber());
             /*    current_linenum = tokenizer_num();*/
-            accept(Token.TOKENIZER_NUMBER);
+            AcceptToken (Token.NUMBER);
             statement();
             return;
         }
         /*---------------------------------------------------------------------------*/
         public void ubasic_run()
         {
-            if(tokenizer.Finished()) {
+            if(tokenizer.IsFinished()) {
                 Debug.WriteLine("uBASIC program finished");
                 return;
             }
@@ -474,7 +488,7 @@ namespace BasicSharp
         /*---------------------------------------------------------------------------*/
         public bool ubasic_finished()
         {
-            return ended || tokenizer.Finished();
+            return ended || tokenizer.IsFinished ();
         }
         /*---------------------------------------------------------------------------*/
         void ubasic_set_variable(int varnum, int value)
@@ -494,6 +508,15 @@ namespace BasicSharp
         /*
          * Instruction Delegates
          */
+        public EventHandler<int> DelayDelegate;
+
+        private void HandleDelayStatement(int delay)
+        {
+            if (DelayDelegate != null) {
+                DelayDelegate (this, delay);
+            }
+        }
+
         public class LEDColorParameters
         {
             public byte RedColor;
@@ -536,7 +559,7 @@ namespace BasicSharp
         // Default Math Function Delegate.
         private void MathFunctionHandler (object sender, Interpreter.MathFunctionParams e)
         {
-            if (e.Op == Token.TOKENIZER_RAND) {
+            if (e.Op == Token.RAND) {
                 e.Result = RandNumber.Next (e.Operand1);
                 Debug.WriteLine ("Random Number: {0}", e.Result);
                 return;
@@ -547,13 +570,13 @@ namespace BasicSharp
 
 
             switch (e.Op) {
-            case Token.TOKENIZER_SIN:
+            case Token.SIN:
                 value = Math.Sin (value);
                 break;
-            case Token.TOKENIZER_COS:
+            case Token.COS:
                 value = Math.Cos (value);
                 break;
-            case Token.TOKENIZER_TAN:
+            case Token.TAN:
                 value = Math.Tan (value);
                 break;
             }

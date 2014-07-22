@@ -4,55 +4,56 @@ using System.Diagnostics;
 namespace BasicSharp
 {
     public enum Token {
-        TOKENIZER_ERROR,
+        ERROR,
+        ENDOFINPUT,
         // Variant Tokens.
-        TOKENIZER_ENDOFINPUT,
-        TOKENIZER_NUMBER,
-        TOKENIZER_STRING,
-        TOKENIZER_VARIABLE,
+        NUMBER,
+        STRING,
+        VARIABLE,
 
         // Single-Character Tokens.
-        TOKENIZER_COMMA,
-        TOKENIZER_SEMICOLON,
-        TOKENIZER_PLUS,
-        TOKENIZER_MINUS,
-        TOKENIZER_AND,
-        TOKENIZER_OR,
-        TOKENIZER_ASTR,
-        TOKENIZER_SLASH,
-        TOKENIZER_MOD,
-        TOKENIZER_LEFTPAREN,
-        TOKENIZER_RIGHTPAREN,
-        TOKENIZER_LT,
-        TOKENIZER_GT,
-        TOKENIZER_EQ,
-        TOKENIZER_CR,
+        COMMA,
+        SEMICOLON,
+        PLUS,
+        MINUS,
+        AND,
+        OR,
+        ASTR,
+        SLASH,
+        MOD,
+        LEFTPAREN,
+        RIGHTPAREN,
+        LT,
+        GT,
+        EQ,
+        CR,
 
         // Basic Keywords.
-        TOKENIZER_PRINT,
-        TOKENIZER_IF,
-        TOKENIZER_THEN,
-        TOKENIZER_ELSE,
-        TOKENIZER_FOR,
-        TOKENIZER_TO,
-        TOKENIZER_NEXT,
-        TOKENIZER_GOTO,
-        TOKENIZER_GOSUB,
-        TOKENIZER_RETURN,
-        TOKENIZER_CALL,
-        TOKENIZER_END,
+        IF,
+        THEN,
+        ELSE,
+        FOR,
+        TO,
+        NEXT,
+        GOTO,
+        GOSUB,
+        RETURN,
+        CALL,
+        END,
 
         // Extended Keywords.
-        TOKENIZER_SIN,
-        TOKENIZER_COS,
-        TOKENIZER_TAN,
-        TOKENIZER_RAND,
+        PRINT,
+        DELAY,
+        SIN,
+        COS,    
+        TAN,
+        RAND,
 
         // Device-specific Keywords.
-        TOKENIZER_LED,
+        LED,
 
         // End of Tokens.
-        TOKENIZER_NULL,
+        NULL,
     };
 
     public class Tokenizer
@@ -64,25 +65,26 @@ namespace BasicSharp
 
         private static KeywordToken[] keywords = new KeywordToken[] {
             // Basic Keywords.
-            new KeywordToken() {    keyword = "print",  token = Token.TOKENIZER_PRINT},
-            new KeywordToken() {    keyword = "if",     token = Token.TOKENIZER_IF},
-            new KeywordToken() {    keyword = "then",   token = Token.TOKENIZER_THEN},
-            new KeywordToken() {    keyword = "else",   token = Token.TOKENIZER_ELSE},
-            new KeywordToken() {    keyword = "for",    token = Token.TOKENIZER_FOR},
-            new KeywordToken() {    keyword = "to",     token = Token.TOKENIZER_TO},
-            new KeywordToken() {    keyword = "next",   token = Token.TOKENIZER_NEXT},
-            new KeywordToken() {    keyword = "goto",   token = Token.TOKENIZER_GOTO},
-            new KeywordToken() {    keyword = "gosub",  token = Token.TOKENIZER_GOSUB},
-            new KeywordToken() {    keyword = "return", token = Token.TOKENIZER_RETURN},
-            new KeywordToken() {    keyword = "call",   token = Token.TOKENIZER_CALL},
-            new KeywordToken() {    keyword = "end",    token = Token.TOKENIZER_END},
+            new KeywordToken() {    keyword = "if",     token = Token.IF},
+            new KeywordToken() {    keyword = "then",   token = Token.THEN},
+            new KeywordToken() {    keyword = "else",   token = Token.ELSE},
+            new KeywordToken() {    keyword = "for",    token = Token.FOR},
+            new KeywordToken() {    keyword = "to",     token = Token.TO},
+            new KeywordToken() {    keyword = "next",   token = Token.NEXT},
+            new KeywordToken() {    keyword = "goto",   token = Token.GOTO},
+            new KeywordToken() {    keyword = "gosub",  token = Token.GOSUB},
+            new KeywordToken() {    keyword = "return", token = Token.RETURN},
+            new KeywordToken() {    keyword = "call",   token = Token.CALL},
+            new KeywordToken() {    keyword = "end",    token = Token.END},
             // Extended Keywords.
-            new KeywordToken() {    keyword = "sin",    token = Token.TOKENIZER_SIN},
-            new KeywordToken() {    keyword = "cos",    token = Token.TOKENIZER_COS},
-            new KeywordToken() {    keyword = "tan",    token = Token.TOKENIZER_TAN},
-            new KeywordToken() {    keyword = "rand",   token = Token.TOKENIZER_RAND},
+            new KeywordToken() {    keyword = "print",  token = Token.PRINT},
+            new KeywordToken() {    keyword = "delay",  token = Token.DELAY},
+            new KeywordToken() {    keyword = "sin",    token = Token.SIN},
+            new KeywordToken() {    keyword = "cos",    token = Token.COS},
+            new KeywordToken() {    keyword = "tan",    token = Token.TAN},
+            new KeywordToken() {    keyword = "rand",   token = Token.RAND},
             // Device-specific Keywords.
-            new KeywordToken() {    keyword = "led",    token = Token.TOKENIZER_LED},
+            new KeywordToken() {    keyword = "led",    token = Token.LED},
         };
 
         private int PC, NextPC;
@@ -92,7 +94,7 @@ namespace BasicSharp
 
         private const int MAX_NUMLEN = 5;
 
-        private Token CurrentToken = Token.TOKENIZER_ERROR;
+        private Token CurrentToken = Token.ERROR;
 
         public Tokenizer (char[] program)
         {
@@ -109,7 +111,7 @@ namespace BasicSharp
 
         public void Next()
         {
-            if(Finished()) {
+            if(IsFinished()) {
                 return;
             }
 
@@ -123,24 +125,30 @@ namespace BasicSharp
             return;
         }
 
+        public void PrintError()
+        {
+            Debug.WriteLine("tokenizer_error_print: '{0}'", PC);
+        }
+
         public Token GetToken()
         {
             return CurrentToken;
         }
 
+        public bool IsFinished()
+        {
+            return (PC == Program.Length || CurrentToken == Token.ENDOFINPUT);
+        }
+
+        // Parsing contents.
         public int GetNumber()
         {
             return int.Parse(new string(Program, PC, NextPC - PC));
         }
 
-        public int GetVariable()
-        {
-            return char.ToLower(Program[PC]) - 'a';
-        }
-
         public string GetString()
         {
-            if(GetToken() != Token.TOKENIZER_STRING) {
+            if(GetToken() != Token.STRING) {
                 return null;
             }
 
@@ -155,65 +163,70 @@ namespace BasicSharp
             return new string (Program, PC + 1, end - PC - 1);
         }
 
-        public bool Finished()
+        public int GetVariable()
         {
-            return (PC == Program.Length || CurrentToken == Token.TOKENIZER_ENDOFINPUT);
+            return char.ToLower(Program[PC]) - 'a';
         }
 
-        public void PrintError()
-        {
-            Debug.WriteLine("tokenizer_error_print: '{0}'", PC);
-        }
-
-        /*---------------------------------------------------------------------------*/
-        private Token SingleChar()
+        // Scan tokens.
+        private Token CheckSingleChar()
         {
             char reg = Program [PC];
 
             switch (reg) {
             case '\n':
-                return Token.TOKENIZER_CR;
+                return Token.CR;
             case ',':
-                return Token.TOKENIZER_COMMA;
+                return Token.COMMA;
             case ';':
-                return Token.TOKENIZER_SEMICOLON;
+                return Token.SEMICOLON;
             case '+':
-                return Token.TOKENIZER_PLUS;
+                return Token.PLUS;
             case '-':
-                return Token.TOKENIZER_MINUS;
+                return Token.MINUS;
             case '&':
-                return Token.TOKENIZER_AND;
+                return Token.AND;
             case '|':
-                return Token.TOKENIZER_OR;
+                return Token.OR;
             case '*':
-                return Token.TOKENIZER_ASTR;
+                return Token.ASTR;
             case '/':
-                return Token.TOKENIZER_SLASH;
+                return Token.SLASH;
             case '%':
-                return Token.TOKENIZER_MOD;
+                return Token.MOD;
             case '(':
-                return Token.TOKENIZER_LEFTPAREN;
+                return Token.LEFTPAREN;
             case ')':
-                return Token.TOKENIZER_RIGHTPAREN;
+                return Token.RIGHTPAREN;
             case '<':
-                return Token.TOKENIZER_LT;
+                return Token.LT;
             case '>':
-                return Token.TOKENIZER_GT;
+                return Token.GT;
             case '=':
-                return Token.TOKENIZER_EQ;
+                return Token.EQ;
             }
-            return Token.TOKENIZER_NULL;
+            return Token.NULL;
+        }
+
+        private bool CheckKeyword(char[] token)
+        {
+            for (int i = 0; i < token.Length; i++) {
+                if (char.ToLower(Program [PC + i]) != token [i])
+                    return false;
+            }
+
+            return true;
         }
 
         private Token GetNextToken()
         {
             if (PC == Program.Length)
-                return Token.TOKENIZER_ENDOFINPUT;
+                return Token.ENDOFINPUT;
 
             char reg = char.ToLower(Program [PC]);
 
             if (reg == 0) {
-                return Token.TOKENIZER_ENDOFINPUT;
+                return Token.ENDOFINPUT;
             }
 
             if (char.IsDigit(reg)) {
@@ -221,22 +234,22 @@ namespace BasicSharp
                     if(!char.IsDigit(Program[PC + i])) {
                         if(i > 0) {
                             NextPC = PC + i;
-                            return Token.TOKENIZER_NUMBER;
+                            return Token.NUMBER;
                         } else {
                             Debug.WriteLine("get_next_token: error due to too short number");
-                            return Token.TOKENIZER_ERROR;
+                            return Token.ERROR;
                         }
                     }
                     if(!char.IsDigit(Program[PC + i])) {
                         Debug.WriteLine("get_next_token: error due to malformed number");
-                        return Token.TOKENIZER_ERROR;
+                        return Token.ERROR;
                     }
                 }
                 Debug.WriteLine("get_next_token: error due to too long number");
-                return Token.TOKENIZER_ERROR;
-            } else if(SingleChar() != Token.TOKENIZER_NULL) {
+                return Token.ERROR;
+            } else if(CheckSingleChar() != Token.NULL) {
                 NextPC = PC + 1;
-                return SingleChar();
+                return CheckSingleChar();
             } else if(reg == '"') {
                 NextPC = PC;
                 do {
@@ -244,10 +257,10 @@ namespace BasicSharp
                 } while(Program[NextPC] != '"');
 
                 ++ NextPC;
-                return Token.TOKENIZER_STRING;
+                return Token.STRING;
             } else {
                 foreach (var kt in keywords) {
-                    if (CheckToken(kt.keyword.ToCharArray())) {
+                    if (CheckKeyword(kt.keyword.ToCharArray())) {
                         NextPC = PC + kt.keyword.Length;
                         return kt.token;
                     }
@@ -256,20 +269,10 @@ namespace BasicSharp
 
             if(reg >= 'a' && reg <= 'z') {
                 NextPC = PC + 1;
-                return Token.TOKENIZER_VARIABLE;
+                return Token.VARIABLE;
             }
 
-            return Token.TOKENIZER_ERROR;
-        }
-
-        private bool CheckToken(char[] token)
-        {
-            for (int i = 0; i < token.Length; i++) {
-                if (char.ToLower(Program [PC + i]) != token [i])
-                    return false;
-            }
-
-            return true;
+            return Token.ERROR;
         }
     }
 }
